@@ -1,5 +1,8 @@
 import puppeteer from 'puppeteer';
 
+let timeoutId
+let intervalId
+
 export default {
     // Multiple browsers support
     isMultiBrowser: true,
@@ -51,6 +54,37 @@ export default {
             await page.emulate(device);
         }
 
+
+        timeoutId = setTimeout(async () => {
+            console.info("sts::reload");
+            //await this.closeBrowser(id)
+            //await this.openBrowser(id, pageUrl, browserName, true)
+            await page.reload();
+            console.info("sts::reloaded");
+
+
+            timeoutId = setTimeout(async () => {
+                console.info("sts::reload");
+                //await this.closeBrowser(id)
+                //await this.openBrowser(id, pageUrl, browserName, true)
+                await page.reload();
+                console.info("sts::reloaded");
+            });
+            let tmp = 10;
+            clearInterval(intervalId);
+            intervalId = setInterval(() => {
+                tmp--;
+                console.log("reloaded after " + tmp + "min");
+            }, 60 * 1000);
+
+        }, 10 * 60 * 1000);
+        let tmp = 10;
+        intervalId = setInterval(() => {
+            tmp--;
+            console.log("reloaded after " + tmp + "min");
+        }, 60 * 1000);
+
+
         console.log("sts::goto url=" + pageUrl);
         return new Promise((resolve, reject) => {
             const gotoTimeout = setTimeout(() => {
@@ -67,6 +101,7 @@ export default {
                 }
 
             }, 30 * 1000);
+
             page.goto(pageUrl)
                 .then(() => {
                     console.log("sts::url opened");
@@ -83,6 +118,8 @@ export default {
     },
 
     async closeBrowser(id) {
+        clearInterval(intervalId);
+        clearTimeout(timeoutId);
         delete this.openedPages[id];
         await this.browser.close();
     },

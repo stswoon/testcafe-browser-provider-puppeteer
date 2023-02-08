@@ -10,3 +10,8 @@ test('it should render header element', async t => {
     await t
         .expect(page.Header.exists).ok();
 });
+
+test('it should render header element2', async t => {
+    await t
+        .expect(page.Header.exists).ok();
+});
