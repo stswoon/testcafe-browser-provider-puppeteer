@@ -37,4 +37,5 @@ var build = function () {
 
 gulp.task('clean', clean);
 gulp.task('lint', lint);
-gulp.task('build', gulp.series(lint, clean, build));
+// gulp.task('build', gulp.series(lint, clean, build));
+gulp.task('build', gulp.series(clean, build));

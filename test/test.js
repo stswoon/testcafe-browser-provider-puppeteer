@@ -1,7 +1,7 @@
 import Page from './page-model';
 
-fixture `e2e tests`
-.page `http://www.dobosz.at`
+fixture`e2e tests`
+    .page`http://ya.ru/`
 ;
 
 const page = new Page();
