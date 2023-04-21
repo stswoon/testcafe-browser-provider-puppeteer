@@ -1,139 +1,121 @@
 import puppeteer from 'puppeteer';
 
-let timeoutId
-let intervalId
+// https://github.com/DevExpress/testcafe/blob/master/src/browser/provider/built-in/locally-installed.js
+// import browserTools from 'testcafe-browser-tools';
+
+
+const openedPages = {};
+
+let timeoutId;
+
+const reloadPages = () => {
+    console.log("sts::reloading pages", openedPages);
+    let allPages = Object.values(openedPages)
+        .map(page => page.reload());
+    return Promise.all(allPages)
+        .then(() => console.log("sts::reloaded"));
+}
+
+const startReloadPagesTimer = (timeout) => {
+    stopReloadPagesTimer(timeoutId);
+    timeoutId = setTimeout(() => {
+        reloadPages();
+    }, timeout);
+    console.log("sts::startReloadPagesTimer, id=" + timeoutId + " time=" + timeout);
+    return timeoutId;
+}
+
+const stopReloadPagesTimer = () => {
+    console.log("sts::stopReloadPagesTimer, id=" + timeoutId);
+    clearTimeout(timeoutId)
+}
+
+function extractRegexp(s, regexp) {
+    let arr = regexp.exec(s) || [null, null];
+    return arr[1];
+}
+
+function getWidthHeight(browserArgs) {
+    const widthHeight = browserArgs.find(item => item.startsWith("width"));
+    const width = extractRegexp(widthHeight, /width=(\d*);/g);
+    const height = extractRegexp(widthHeight, /height=(\d*)/g);
+    return {width, height};
+}
+
+// https://github.com/puppeteer/puppeteer/issues/1834
+// https://bugs.chromium.org/p/chromium/issues/detail?id=1085829
+// https://github.com/puppeteer/puppeteer
 
 export default {
-    // Multiple browsers support
-    isMultiBrowser: true,
+    reloadPages: reloadPages,
+    startReloadPagesTimer: startReloadPagesTimer,
+    stopReloadPagesTimer: stopReloadPagesTimer,
+
+    isMultiBrowser: true, // Multiple browsers support
 
     browser: null,
 
-    openedPages: {},
-
-    // Required - must be implemented
-    // Browser control
-    async openBrowser(id, pageUrl, browserName, retry) {
+    async openBrowser(id, pageUrl, browserName) {
+        console.log("puppeteersts::openBrowser");
         const browserArgs = browserName.split(':');
         if (!this.browser) {
+            let {width, height} = getWidthHeight(browserArgs);
+            width = width || 1280;
+            width = parseInt(width);
+            height = height || 720;
+            height = parseInt(height);
+            console.log(`puppeteersts:: width=${width} height=${height}`);
             const launchArgs = {
-                timeout: 10000
+                timeout: 60000,
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-gpu',
+                    '--disable-dev-shm-usage',
+                    `--window-size=${width},${height}`
+                ],
+                headless: browserArgs.includes("headless"),
+                defaultViewport: {width, height}
             };
-
-            const noSandboxArgs = ['--no-sandbox', '--disable-setuid-sandbox'];
-
-            if (browserArgs.indexOf('no_sandbox') !== -1) launchArgs.args = noSandboxArgs;
-            else if (browserName.indexOf('?') !== -1) {
-                const userArgs = browserName.split('?');
-                const params = userArgs[0];
-
-                if (params === 'no_sandbox') launchArgs.args = noSandboxArgs;
-
-                const executablePath = userArgs[1];
-
-                if (executablePath.length > 0)
-                    launchArgs.executablePath = executablePath;
-            }
-            console.log("sts::open browser")
+            console.log("puppeteersts::opening browser, launchArgs: ", launchArgs);
             this.browser = await puppeteer.launch(launchArgs);
-            console.log("sts::browser opened")
+            console.log("puppeteersts::browser opened");
         }
-
-        console.log("sts::open page")
+        console.log("puppeteersts::opening page");
         const page = await this.browser.newPage();
-        console.log("sts::page opened")
+        console.log("puppeteersts::page opened");
 
-        const emulationArg = browserArgs.find(v => /^emulate/.test(v));
-
-        if (Boolean(emulationArg)) {
-            const [, emulationDevice] = emulationArg.split('=');
-            const device = puppeteer.devices[emulationDevice];
-
-            if (!device) throw new Error('Emulation device is not supported');
-
-            await page.emulate(device);
-        }
-
-
-        timeoutId = setTimeout(async () => {
-            console.info("sts::reload");
-            //await this.closeBrowser(id)
-            //await this.openBrowser(id, pageUrl, browserName, true)
-            await page.reload();
-            console.info("sts::reloaded");
-
-
-            timeoutId = setTimeout(async () => {
-                console.info("sts::reload");
-                //await this.closeBrowser(id)
-                //await this.openBrowser(id, pageUrl, browserName, true)
-                await page.reload();
-                console.info("sts::reloaded");
-            });
-            let tmp = 10;
-            clearInterval(intervalId);
-            intervalId = setInterval(() => {
-                tmp--;
-                console.log("reloaded after " + tmp + "min");
-            }, 60 * 1000);
-
-        }, 10 * 60 * 1000);
-        let tmp = 10;
-        intervalId = setInterval(() => {
-            tmp--;
-            console.log("reloaded after " + tmp + "min");
-        }, 60 * 1000);
-
-
-        console.log("sts::goto url=" + pageUrl);
-        return new Promise((resolve, reject) => {
-            const gotoTimeout = setTimeout(() => {
-                console.error("sts::gotoTimeout");
-
-                if (retry) {
-                    console.error("sts::retry already used");
-                    reject("sts::gotoTimeout");
-                } else {
-                    console.log("sts::retry");
-                    this.closeBrowser(id)
-                        .then(() => this.openBrowser(id, pageUrl, browserName, true))
-                        .then(() => resolve());
-                }
-
-            }, 30 * 1000);
-
-            page.goto(pageUrl)
-                .then(() => {
-                    console.log("sts::url opened");
-                    clearTimeout(gotoTimeout);
-                    this.openedPages[id] = page;
-                    resolve();
-                })
-                .catch((e) => {
-                    console.error("sts::error", e)
-                    clearTimeout(gotoTimeout);
-                    reject(e);
-                })
-        });
+        console.log("puppeteersts::opening url=" + pageUrl);
+        await page.goto(pageUrl);
+        openedPages[id] = page;
+        console.log("puppeteersts::url opened");
     },
 
     async closeBrowser(id) {
-        clearInterval(intervalId);
-        clearTimeout(timeoutId);
-        delete this.openedPages[id];
+        console.log("puppeteersts::closing browser");
+        stopReloadPagesTimer();
+        delete openedPages[id];
         await this.browser.close();
+        this.browser = null;
+        console.log("puppeteersts::browser closed");
     },
 
     async isValidBrowserName() {
+        console.log("puppeteersts::isValidBrowserName");
         return true;
     },
 
-    // Extra methods
     async resizeWindow(id, width, height) {
-        await this.openedPages[id].setViewport({width, height});
+        console.log("puppeteersts::resizeWindow ", arguments);
+        await openedPages[id].setViewport({width, height});
     },
 
     async takeScreenshot(id, screenshotPath) {
-        await this.openedPages[id].screenshot({path: screenshotPath});
+        console.log("puppeteersts::takeScreenshot ", arguments);
+        await openedPages[id].screenshot({path: screenshotPath});
     }
 };
+
+
+
+

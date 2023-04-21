@@ -1,25 +1,13 @@
 {
   "name": "testcafe-browser-provider-puppeteersts",
-  "version": "1.5.4",
+  "version": "2.0.0-a2",
   "description": "puppeteer TestCafe browser provider plugin.",
-  "repository": "https://github.com/jdobosz/testcafe-browser-provider-puppeteer",
-  "homepage": "https://github.com/jdobosz/testcafe-browser-provider-puppeteer",
-  "author": {
-    "name": "jdobosz",
-    "email": "jacek@dobosz.at"
-  },
-  "contributors": [
-    {
-      "name": "Lukasz Szmit",
-      "email": "lukasz.szmit@workday.com"
-    }
-  ],
   "main": "lib/index",
   "files": [
     "lib"
   ],
   "scripts": {
-    "test": "cd test && npm test",
+    "test": "npm run build && cd test && npm test",
     "build": "gulp build"
   },
   "keywords": [
@@ -30,7 +18,9 @@
   "license": "MIT",
   "dependencies": {
     "@babel/runtime": "^7.0.0",
-    "puppeteer": "^1.20.0"
+    "puppeteer": "^19.6.3",
+    "es5-ext": "0.10.53",
+    "testcafe-browser-tools": "^2.0.23"
   },
   "devDependencies": {
     "@babel/cli": "^7.0.0",

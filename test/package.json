@@ -4,13 +4,14 @@
   "description": "e2e tests",
   "main": "test.js",
   "scripts": {
-    "test2": "npm install && testcafe \"puppeteer:no_sandbox:emulate=Galaxy S5\" test.js -s ./",
-    "test": "testcafe \"puppeteer:no_sandbox:emulate=Galaxy S5\" test.js -s ./"
+    "test2": "testcafe \"puppeteer:no_sandbox:emulation:width=100;height=100\" test2.js -s ./",
+    "test1": "testcafe \"puppeteer:no_sandbox:headless\" test1.js -s ./",
+    "test": "npm run test1 && npm run test2"
   },
   "author": "jacek@dobosz.at",
   "license": "ISC",
   "devDependencies": {
-    "testcafe": "^0.20.2 || ^1.0.0",
+    "testcafe": "^1.0.0 || ^2.0.0",
     "testcafe-browser-provider-puppeteer": "../"
   }
 }
